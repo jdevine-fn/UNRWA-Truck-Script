@@ -1,3 +1,5 @@
+pip install -r requirements.txt
+
 import gdown
 import os
 import platform
