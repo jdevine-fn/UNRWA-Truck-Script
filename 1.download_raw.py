@@ -12,7 +12,7 @@ from getpass import getpass
 
 # Google Drive file ID for the input file
 file_id = '19oQZt7zWE29hK6Whnr9zop4gIGUValfxK14fQVHW18s'  # Update with actual file ID if needed
-download_url = f'https://drive.google.com/uc?id={file_id}'
+download_url = f'https://drive.google.com/uc?export=download&id={file_id}'
 
 # Set up the local data directory (relative to the repository location)
 data_dir = os.path.join(os.getcwd(), "data")
