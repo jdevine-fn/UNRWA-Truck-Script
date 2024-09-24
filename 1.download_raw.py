@@ -1,15 +1,15 @@
 import gdown
 import os
 import pandas as pd
-from office365.sharepoint.client_context import ClientContext
-from office365.runtime.auth.user_credential import UserCredential
 from datetime import datetime
+from pydrive.auth import GoogleAuth
+from pydrive.drive import GoogleDrive
 
 # ==================
 # DOWNLOAD DATA FROM GOOGLE DRIVE
 # ==================
 
-# Google Drive file ID for the input file
+# Google Drive file ID for the input file (do not change)
 file_id = '19oQZt7zWE29hK6Whnr9zop4gIGUValfxK14fQVHW18s'
 download_url = f'https://drive.google.com/uc?id={file_id}'
 
@@ -21,6 +21,7 @@ os.makedirs(data_dir, exist_ok=True)
 output_file = os.path.join(data_dir, "unwra_trucks_raw.xlsx")
 gdown.download(download_url, output_file, quiet=False, use_cookies=True)
 
+# Check if the file was downloaded successfully
 try:
     df = pd.read_excel(output_file)
     print(f"File successfully saved as {output_file}")
@@ -29,26 +30,34 @@ except Exception as e:
     exit()
 
 # ==================
-# UPLOAD DATA TO SHAREPOINT
+# PROCESS DATA
+# ==================
+# (Perform any data processing here as needed)
+# For example: Cleaning, filtering, etc.
+
+# Save the processed file locally
+processed_dir = os.path.join(data_dir, "processed")
+os.makedirs(processed_dir, exist_ok=True)
+
+processed_file = os.path.join(processed_dir, f"unwra_trucks_processed_{datetime.now().strftime('%Y%m%d%H%M%S')}.xlsx")
+df.to_excel(processed_file, index=False)
+print(f"Processed file saved locally as {processed_file}")
+
+# ==================
+# UPLOAD TO SPECIFIC GOOGLE DRIVE FOLDER
 # ==================
 
-# Set up SharePoint credentials and folder
-sharepoint_url = "https://chemonics.sharepoint.com/sites/FEWSNET_Technical_Team"
-sharepoint_folder = "/sites/FEWSNET_Technical_Team/Shared Documents/02.Markets_and_Trade/04.Reports/06.Special_reports/06. Gaza Food Supply Reports 2024/Master Data Workbooks"
+# Authenticate and initialize PyDrive
+gauth = GoogleAuth()
+gauth.LocalWebserverAuth()  # Creates local webserver and automatically handles authentication
+drive = GoogleDrive(gauth)
 
-# Ask for SharePoint credentials (password will be visible as you type)
-username = input("Enter your SharePoint username (email): ")
-password = input("Enter your SharePoint password (visible): ")
+# Google Drive folder ID (replace this with the folder link's ID)
+folder_id = '1PwHYUHx7T7Ey8MgSlXf4zT0vF2sOoLBb'
 
-# Authenticate to SharePoint using user credentials (OAuth)
-ctx = ClientContext(sharepoint_url).with_credentials(UserCredential(username, password))
+# Create a file and set the parent folder ID
+gdrive_file = drive.CreateFile({'title': f'unwra_trucks_processed_{datetime.now().strftime("%Y%m%d%H%M%S")}.xlsx', 'parents': [{'id': folder_id}]})
+gdrive_file.SetContentFile(processed_file)
+gdrive_file.Upload()
 
-# Prepare the file for upload
-sharepoint_file_name = f"unwra_trucks_processed_{datetime.now().strftime('%Y%m%d%H%M%S')}.xlsx"
-
-# Upload the file to SharePoint
-with open(output_file, 'rb') as file_content:
-    target_url = f"{sharepoint_folder}/{sharepoint_file_name}"
-    ctx.web.get_folder_by_server_relative_url(sharepoint_folder).upload_file(sharepoint_file_name, file_content.read()).execute_query()
-
-print(f"File successfully uploaded to SharePoint as {sharepoint_file_name}")
+print(f"Processed file uploaded to Google Drive folder with title: {gdrive_file['title']}")
