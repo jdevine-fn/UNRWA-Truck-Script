@@ -2,15 +2,16 @@ import gdown
 import os
 import pandas as pd
 from office365.sharepoint.client_context import ClientContext
-from office365.runtime.auth.client_credential import ClientCredential
+from office365.runtime.auth.user_credential import UserCredential
 from datetime import datetime
+from getpass import getpass
 
 # ==================
 # DOWNLOAD DATA FROM GOOGLE DRIVE
 # ==================
 
 # Google Drive file ID for the input file
-file_id = 'your-google-drive-file-id'
+file_id = '19oQZt7zWE29hK6Whnr9zop4gIGUValfxK14fQVHW18s'  # Update with actual file ID if needed
 download_url = f'https://drive.google.com/uc?id={file_id}'
 
 # Set up the local data directory (relative to the repository location)
@@ -33,17 +34,16 @@ except Exception as e:
 # UPLOAD DATA TO SHAREPOINT
 # ==================
 
-# SharePoint credentials (replace with your own)
+# Set up SharePoint credentials and folder
 sharepoint_url = "https://chemonics.sharepoint.com/sites/FEWSNET_Technical_Team"
-client_id = "your-client-id"
-client_secret = "your-client-secret"
-credentials = ClientCredential(client_id, client_secret)
-
-# Authenticate SharePoint client
-ctx = ClientContext(sharepoint_url).with_credentials(credentials)
-
-# Define the target SharePoint folder path
 sharepoint_folder = "/sites/FEWSNET_Technical_Team/Shared Documents/02.Markets_and_Trade/04.Reports/06.Special_reports/06. Gaza Food Supply Reports 2024/Master Data Workbooks"
+
+# Use interactive login for SharePoint (OAuth)
+username = input("Enter your SharePoint username (email): ")
+password = getpass("Enter your SharePoint password: ")
+
+# Authenticate to SharePoint using user credentials (OAuth)
+ctx = ClientContext(sharepoint_url).with_credentials(UserCredential(username, password))
 
 # Prepare the file for upload (for example, you can upload the raw file or a processed version)
 sharepoint_file_name = f"unwra_trucks_processed_{datetime.now().strftime('%Y%m%d%H%M%S')}.xlsx"
