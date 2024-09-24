@@ -1,9 +1,8 @@
 import gdown
 import os
+import platform
 import pandas as pd
 from datetime import datetime
-from pydrive.auth import GoogleAuth
-from pydrive.drive import GoogleDrive
 
 # ==================
 # DOWNLOAD DATA FROM GOOGLE DRIVE
@@ -13,12 +12,24 @@ from pydrive.drive import GoogleDrive
 file_id = '19oQZt7zWE29hK6Whnr9zop4gIGUValfxK14fQVHW18s'
 download_url = f'https://drive.google.com/uc?id={file_id}'
 
-# Set up the local data directory (relative to the repository location)
-data_dir = os.path.join(os.getcwd(), "data")
-os.makedirs(data_dir, exist_ok=True)
+# Get the current date in the format YYYYMMDD
+current_date = datetime.now().strftime('%Y%m%d')
 
-# Download the file to the local data directory
-output_file = os.path.join(data_dir, "unwra_trucks_raw.xlsx")
+# Determine the user's desktop location (macOS and Windows compatibility)
+if platform.system() == "Darwin":  # macOS
+    desktop = os.path.join(os.path.expanduser("~"), "Desktop")
+elif platform.system() == "Windows":  # Windows
+    desktop = os.path.join(os.environ["HOMEPATH"], "Desktop")
+else:
+    raise Exception("Unsupported operating system. This script works on macOS and Windows only.")
+
+# Create a folder on the desktop with the format "UNRWA Truck Data_YYYYMMDD"
+folder_name = f"UNRWA Truck Data_{current_date}"
+output_dir = os.path.join(desktop, folder_name)
+os.makedirs(output_dir, exist_ok=True)
+
+# Download the file to the new folder on the desktop
+output_file = os.path.join(output_dir, "unwra_trucks_raw.xlsx")
 gdown.download(download_url, output_file, quiet=False, use_cookies=True)
 
 # Check if the file was downloaded successfully
@@ -32,32 +43,11 @@ except Exception as e:
 # ==================
 # PROCESS DATA
 # ==================
-# (Perform any data processing here as needed)
+# (Perform any data processing here if needed)
 # For example: Cleaning, filtering, etc.
 
-# Save the processed file locally
-processed_dir = os.path.join(data_dir, "processed")
-os.makedirs(processed_dir, exist_ok=True)
-
-processed_file = os.path.join(processed_dir, f"unwra_trucks_processed_{datetime.now().strftime('%Y%m%d%H%M%S')}.xlsx")
+# Save the processed file in the same folder on the desktop
+processed_file = os.path.join(output_dir, f"unwra_trucks_processed_{current_date}.xlsx")
 df.to_excel(processed_file, index=False)
 print(f"Processed file saved locally as {processed_file}")
 
-# ==================
-# UPLOAD TO SPECIFIC GOOGLE DRIVE FOLDER
-# ==================
-
-# Authenticate and initialize PyDrive
-gauth = GoogleAuth()
-gauth.LocalWebserverAuth()  # Creates local webserver and automatically handles authentication
-drive = GoogleDrive(gauth)
-
-# Google Drive folder ID (replace this with the folder link's ID)
-folder_id = '1PwHYUHx7T7Ey8MgSlXf4zT0vF2sOoLBb'
-
-# Create a file and set the parent folder ID
-gdrive_file = drive.CreateFile({'title': f'unwra_trucks_processed_{datetime.now().strftime("%Y%m%d%H%M%S")}.xlsx', 'parents': [{'id': folder_id}]})
-gdrive_file.SetContentFile(processed_file)
-gdrive_file.Upload()
-
-print(f"Processed file uploaded to Google Drive folder with title: {gdrive_file['title']}")
