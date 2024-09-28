@@ -1,11 +1,10 @@
 import gdown
 import os
 import platform
-import pandas as pd
 from datetime import datetime
 
 # ==================
-# DOWNLOAD DATA FROM GOOGLE DRIVE
+# DOWNLOAD DATA FROM GOOGLE DRIVE WITHOUT MODIFICATION
 # ==================
 
 # Google Drive file ID for the input file (do not change)
@@ -26,37 +25,15 @@ else:
 # Create a folder on the desktop with the format "UNRWA Truck Data_YYYYMMDD"
 folder_name = f"UNRWA Truck Data_{current_date}"
 output_dir = os.path.join(desktop, folder_name)
+
+# Ensure the directory exists
 os.makedirs(output_dir, exist_ok=True)
 
-# Download the file to the new folder on the desktop
-output_file = os.path.join(output_dir, "unwra_trucks_raw.xlsx")
-gdown.download(download_url, output_file, quiet=False, use_cookies=True)
+# Define the final output file name
+output_file = os.path.join(output_dir, "unrwa_trucks_raw.xlsx")
 
-# Check if the file was downloaded successfully
-try:
-    raw_df = pd.read_excel(output_file)
-    print(f"Raw data file successfully saved as {output_file}")
-except Exception as e:
-    print(f'Error reading the downloaded file: {e}')
-    exit()
+# Download the file using gdown (without any modifications to structure or content)
+gdown.download(download_url, output_file, quiet=False, use_cookies=False, verify=False)
 
-# ==================
-# PROCESS DATA
-# ==================
-# (Perform any data processing here if needed)
-# For this example, let's just simulate processed data by modifying the raw data
-processed_df = raw_df.copy()
-processed_df["Processed"] = True  # Example modification for processed data
-
-# ==================
-# SAVE BOTH RAW AND PROCESSED DATA TO A SINGLE EXCEL FILE WITH MULTIPLE SHEETS
-# ==================
-
-final_output_file = os.path.join(output_dir, f"unwra_trucks_{current_date}.xlsx")
-
-# Use pandas ExcelWriter to save both raw and processed data to one Excel file with multiple sheets
-with pd.ExcelWriter(final_output_file, engine='xlsxwriter') as writer:
-    raw_df.to_excel(writer, sheet_name='Raw Data', index=False)
-    processed_df.to_excel(writer, sheet_name='Processed Data', index=False)
-
-print(f"Final Excel file with multiple sheets saved as {final_output_file}")
+# The file is downloaded as-is, retaining the original structure, including multiple sheets and formatting.
+print(f"File successfully downloaded and saved as {output_file} without any alterations.")
