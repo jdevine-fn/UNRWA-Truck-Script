@@ -2,6 +2,7 @@ import gdown
 import os
 import platform
 from datetime import datetime
+import openpyxl
 
 # ==================
 # DOWNLOAD DATA FROM GOOGLE DRIVE WITHOUT MODIFICATION
@@ -37,3 +38,15 @@ gdown.download(download_url, output_file, quiet=False, use_cookies=False, verify
 
 # The file is downloaded as-is, retaining the original structure, including multiple sheets and formatting.
 print(f"File successfully downloaded and saved as {output_file} without any alterations.")
+
+# Load the downloaded Excel file
+wb = openpyxl.load_workbook(output_file)
+
+# Check if 'Suppy Page' exists and rename it to 'Supply Page'
+if 'Suppy Page' in wb.sheetnames:
+    wb['Suppy Page'].title = 'Supply Page'
+    # Save the changes to the file
+    wb.save(output_file)
+    print("Sheet 'Suppy Page' renamed to 'Supply Page'.")
+else:
+    print("No sheet named 'Suppy Page' found. No renaming done.")
