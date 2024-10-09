@@ -45,8 +45,80 @@ wb = openpyxl.load_workbook(output_file)
 # Check if 'Suppy Page' exists and rename it to 'Supply Page'
 if 'Suppy Page' in wb.sheetnames:
     wb['Suppy Page'].title = 'Supply Page'
-    # Save the changes to the file
-    wb.save(output_file)
     print("Sheet 'Suppy Page' renamed to 'Supply Page'.")
 else:
     print("No sheet named 'Suppy Page' found. No renaming done.")
+
+# ==================
+# PROCESS 'Quantity' COLUMN IN 'Supply Page' SHEET
+# ==================
+
+# Check if 'Supply Page' sheet exists
+if 'Supply Page' in wb.sheetnames:
+    ws = wb['Supply Page']
+    print("Processing 'Supply Page' sheet to correct 'Quantity' column.")
+else:
+    print("Sheet 'Supply Page' not found. Exiting.")
+    exit(1)
+
+# Map header names to column letters
+header_row = ws[1]  # Assuming headers are in the first row
+header_map = {}  # Map from header name to column letter
+
+for cell in header_row:
+    header_map[cell.value] = cell.column_letter
+
+# Check if 'Quantity' column exists
+if 'Quantity' in header_map:
+    quantity_col_letter = header_map['Quantity']
+    quantity_col_index = openpyxl.utils.column_index_from_string(quantity_col_letter)
+    print(f"'Quantity' column found at column {quantity_col_letter}.")
+else:
+    print("Column 'Quantity' not found in 'Supply Page'. Exiting.")
+    exit(1)
+
+# Process each cell in the 'Quantity' column starting from row 2
+rows_processed = 0
+date_cells_corrected = 0
+errors_encountered = 0
+
+for row in ws.iter_rows(min_row=2):
+    cell = row[quantity_col_index - 1]  # zero-based index
+    rows_processed += 1
+
+    # Initialize quantity to None
+    quantity = None
+
+    try:
+        if cell.value is None or cell.value == '':
+            quantity = 0  # Preserve legitimate zeros or empty cells
+        elif isinstance(cell.value, datetime):
+            # Cell is a datetime object, likely due to date formatting error
+            # Compute the date serial number
+            base_date = datetime(1899, 12, 31)
+            delta = cell.value - base_date
+            quantity = delta.days
+            date_cells_corrected += 1
+        elif isinstance(cell.value, (int, float)):
+            quantity = cell.value  # Cell contains a numeric value
+        else:
+            # Try to convert cell.value to float
+            quantity = float(cell.value)
+    except Exception as e:
+        print(f"Error processing cell {cell.coordinate}: {e}")
+        errors_encountered += 1
+        quantity = 0  # Default to zero or handle as needed
+
+    # Update the cell with the corrected quantity
+    cell.value = quantity
+    # Set the cell's number format to 'General' to avoid future misinterpretation
+    cell.number_format = 'General'
+
+# Save the changes to the file
+wb.save(output_file)
+print(f"Processing complete. {rows_processed} rows processed.")
+print(f"{date_cells_corrected} cells in 'Quantity' column corrected from date format to numeric values.")
+if errors_encountered > 0:
+    print(f"{errors_encountered} errors encountered during processing.")
+else:
+    print("No errors encountered during processing.")
